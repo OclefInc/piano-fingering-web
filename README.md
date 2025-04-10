@@ -1,4 +1,4 @@
-# Piano Player Web Application
+# Piano Fingering Web Application
 
 This project is a Flask web application that allows users to upload musical files and select a hand size for fingering processing. The application processes the uploaded files and provides results based on the selected hand size.
 

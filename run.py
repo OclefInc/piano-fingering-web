@@ -14,10 +14,10 @@ app = Flask(__name__,
 app.config.from_object(Config)
 
 # Set a secret key for flash messages
-app.secret_key = 'your-secret-key'  # Replace with a real secret key
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key')  # Use environment variable
 
 # Register the blueprint
 app.register_blueprint(app_blueprint)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)  # Set debug to False for production

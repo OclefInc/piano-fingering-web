@@ -2,8 +2,12 @@ import os
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'a_default_secret_key'
-    UPLOAD_FOLDER = 'uploads'
-    ALLOWED_EXTENSIONS = {'txt', 'mid', 'midi', 'msc', 'mscz', 'mscx'}
+
+    # For Heroku, we'll store files in temporary storage
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
+    OUTPUT_FOLDER = os.environ.get('OUTPUT_FOLDER', 'outputs')
+
+    ALLOWED_EXTENSIONS = {'musicxml'}
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB limit for file uploads
 
     @staticmethod

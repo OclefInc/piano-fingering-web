@@ -21,3 +21,6 @@ uploads/*
 outputs/*
 !uploads/.gitkeep
 !outputs/.gitkeep
+
+# Environment variables
+.env
