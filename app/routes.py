@@ -87,23 +87,6 @@ def index():
                     # Process the file with the piano player
                     print(f"Starting processing with run_annotate...")  # Debug
 
-                    # Create a simple test file to see if basic processing works
-                    if filename.endswith('.mid') or filename.endswith('.midi'):
-                        # For MIDI files, try a simpler approach first
-                        try:
-                            import pretty_midi
-                            midi_data = pretty_midi.PrettyMIDI(filepath)
-                            with open(output_path, 'w') as f:
-                                f.write(f"File processed with hand size: {hand_size}\n")
-                                for instrument in midi_data.instruments:
-                                    f.write(f"Instrument: {instrument.name}, Program: {instrument.program}\n")
-                                    for note in instrument.notes[:10]:  # Just first 10 notes
-                                        f.write(f"Note: {note.pitch}, Start: {note.start}, End: {note.end}\n")
-                            flash('File processed successfully (basic MIDI analysis)!')
-                            return redirect(url_for('app.result', filename=output_filename, hand_size=hand_size))
-                        except Exception as e:
-                            print(f"Error in MIDI processing: {str(e)}")
-                            # Continue to try the normal processing
 
                     # Normal processing with run_annotate
                     run_annotate(

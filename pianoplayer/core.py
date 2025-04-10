@@ -8,7 +8,6 @@ from music21.articulations import Fingering
 
 from pianoplayer.hand import Hand
 from pianoplayer.scorereader import reader, PIG2Stream
-import pretty_midi
 
 
 ###########################################################
@@ -176,15 +175,6 @@ def annotate(args):
             rh_noteseq = reader_PIG(args.filename, args.rbeam)
         if not args.right_only:
             lh_noteseq = reader_PIG(args.filename, args.lbeam)
-
-    elif '.mid' in args.filename or '.midi' in args.filename:
-        pm = pretty_midi.PrettyMIDI(args.filename)
-        if not args.left_only:
-            pm_right = pm.instruments[args.rbeam]
-            rh_noteseq = reader_pretty_midi(pm_right, beam=args.rbeam)
-        if not args.right_only:
-            pm_left = pm.instruments[args.lbeam]
-            lh_noteseq = reader_pretty_midi(pm_left, beam=args.lbeam)
 
     else:
         xmlfn = args.filename
