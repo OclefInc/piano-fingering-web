@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Piano Player Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .result-container {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .download-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Piano Player Results</h1>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for message in messages %}
+        <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="result-container">
+        <h2>Processing Complete</h2>
+        <p><strong>Hand Size:</strong> {{ hand_size }}</p>
+        <p><strong>Output File:</strong> {{ filename }}</p>
+
+        {% if file_exists %}
+        <a href="{{ url_for('app.download_file', filename=filename) }}" class="download-btn">Download Processed File</a>
+        {% else %}
+        <p class="error">The output file could not be found. Processing may have failed.</p>
+        {% endif %}
+    </div>
+
+    <a href="{{ url_for('app.index') }}" class="back-link">Process another file</a>
+</body>
+
+</html>

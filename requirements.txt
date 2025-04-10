@@ -1,0 +1,6 @@
+Flask==2.2.2
+Werkzeug==2.2.2
+Flask-WTF==1.0.0
+Flask-Uploads==0.2.1
+music21==9.1.0
+vedo==2023.4.5

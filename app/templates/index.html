@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Piano Player Web</title>
+</head>
+
+<body>
+    <h1>Piano Player</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <div>
+            <label for="file">Upload File:</label>
+            <input type="file" id="file" name="file" required>
+        </div>
+        <div>
+            <label for="hand_size">Hand Size:</label>
+            <select id="hand_size" name="hand_size" required>
+                <option value="XXS">XXS</option>
+                <option value="XS">XS</option>
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+            </select>
+        </div>
+        <div>
+            <input type="submit" value="Submit">
+        </div>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul class="flashes">
+        {% for message in messages %}
+        <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+</body>
+
+</html>
