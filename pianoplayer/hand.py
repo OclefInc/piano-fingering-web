@@ -216,23 +216,74 @@ class Hand:
                 self.autodepth = False
                 self.depth = 9
 
+            # Replace the section around line ~258-285 in the Hand.generate method
+
             best_finger = 0
             ninenotes = None
+
             if i > N-10:
-                if len(out)>1:
+                # This is where the problem is - we need better handling for the end of the sequence
+                if len(out) > 1:
                     best_finger = out.pop(1)
-                ninenotes = self.noteseq[N-9 : N]
+
+                # For the last few notes, we need special handling
+                if i >= N-4 and best_finger == 0:
+                    # Try to determine a sensible fingering for the last few notes
+                    if i > 0 and self.noteseq[i-1].fingering > 0:
+                        prev_finger = self.noteseq[i-1].fingering
+
+                        # Basic fingering rules for the last few notes
+                        if an.isChord:
+                            # Use appropriate fingers for chords based on hand
+                            if self.LR == "right":
+                                # Right-hand chord voicing typically uses 1-3-5 or 1-2-5
+                                chord_position = min(i % 3, 2)  # 0, 1, or 2
+                                chord_fingers = [1, 3, 5]
+                                best_finger = chord_fingers[chord_position]
+                            else:
+                                # Left-hand chord voicing typically uses 5-3-1 or 5-2-1
+                                chord_position = min(i % 3, 2)  # 0, 1, or 2
+                                chord_fingers = [5, 3, 1]
+                                best_finger = chord_fingers[chord_position]
+                        else:
+                            # For melodic passages, use simple up/down patterns
+                            if i > 0:
+                                prev_x = self.noteseq[i-1].x
+                                # Moving right (higher notes for right hand)
+                                if (self.LR == "right" and an.x > prev_x) or (self.LR == "left" and an.x < prev_x):
+                                    best_finger = min(prev_finger + 1, 5)
+                                # Moving left (lower notes for right hand)
+                                else:
+                                    best_finger = max(prev_finger - 1, 1)
+                            else:
+                                best_finger = 3  # Default to middle finger
+                    else:
+                        # If we have no previous context, use middle finger
+                        best_finger = 3
+
+                # Create a dummy ninenotes with the remaining notes plus padding
+                remaining = N - i
+                if remaining < 9:
+                    # Start with actual remaining notes
+                    ninenotes = self.noteseq[i:N]
+                    # Pad with copies of the last note to reach length 9
+                    last_note = self.noteseq[N-1]
+                    padding = [last_note] * (9 - remaining)
+                    ninenotes.extend(padding)
+                else:
+                    ninenotes = self.noteseq[N-9:N]
             else:
-                ninenotes = self.noteseq[i : i+9]
-                out, vel  = self.optimize_seq(ninenotes, start_finger)
-                best_finger  = out[0]
+                # Normal case - we have plenty of notes ahead
+                ninenotes = self.noteseq[i:i+9]
+                out, vel = self.optimize_seq(ninenotes, start_finger)
+                best_finger = out[0]
                 start_finger = out[1]
 
             an.fingering = best_finger
             self.set_fingers_positions(out, ninenotes, 0)
             self.fingerseq.append(list(self.cfps))
 
-            if best_finger>0 and i < N-3:
+            if best_finger>0:
                 fng = Fingering(best_finger)
                 if an.isChord:
                     if len(an.chord21.pitches) < 4:
