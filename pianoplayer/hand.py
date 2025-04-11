@@ -171,16 +171,57 @@ class Hand:
         # if out[1]==-1: exit() #no combination found
         return out
 
-    ###########################################################################################
+    def copy_note(self, note):
+        """Create a proper copy of a note object to avoid reference issues"""
+        import copy
+
+        # Create a shallow copy of the note
+        note_copy = copy.copy(note)
+
+        # For critical music21 objects, create new references
+        if hasattr(note, 'note21') and note.note21 is not None:
+            note_copy.note21 = copy.copy(note.note21)
+
+        if hasattr(note, 'chord21') and note.chord21 is not None:
+            note_copy.chord21 = copy.copy(note.chord21)
+
+        return note_copy
+
+    #####################################################
     def generate(self, start_measure=0, nmeasures=1000):
+        """Generate fingering for a sequence of notes, with padding to handle end notes."""
 
         if start_measure == 1:
-            start_measure=0 # avoid confusion with python numbering
+            start_measure = 0  # avoid confusion with python numbering
 
         if self.LR == "left":
             for anote in self.noteseq:
                 anote.x = -anote.x     # play left as a right on a mirrored keyboard
 
+        # Store the original sequence length
+        original_noteseq = self.noteseq
+        original_length = len(original_noteseq)
+
+        # Add padding at the end with copies of last few notes
+        if original_length >= 9:  # Only add padding if we have enough notes
+            padding_size = 9  # Same as the window size
+            padding_notes = []
+
+            # Create copies of the last notes
+            for i in range(padding_size):
+                # Get the source note from the end
+                source_idx = original_length - padding_size + i
+                if source_idx >= 0 and source_idx < original_length:
+                    # Create a proper copy of the note
+                    note_copy = self.copy_note(original_noteseq[source_idx])
+                    # Mark as padding
+                    note_copy.is_padding = True
+                    padding_notes.append(note_copy)
+
+            # Append padding to sequence
+            self.noteseq = original_noteseq + padding_notes
+
+        # Initialize variables for processing
         start_finger, out, vel = 0, [0 for i in range(9)], 0
         N = len(self.noteseq)
         if self.depth < 3: self.depth = 3
@@ -190,12 +231,12 @@ class Hand:
         current_measure = start_measure
         last_reported_measure = start_measure - 1
 
-        for i in range(N):##############
-
+        # Process all notes (but only apply fingerings to original notes)
+        for i in range(original_length):  # Only process original note indices
             an = self.noteseq[i]
             if an.measure:
-                if an.measure < start_measure : continue
-                if an.measure > start_measure + nmeasures : break
+                if an.measure < start_measure: continue
+                if an.measure > start_measure + nmeasures: break
 
                 # Report progress when measure changes
                 if an.measure != last_reported_measure:
@@ -212,78 +253,18 @@ class Hand:
                         except Exception as e:
                             print(f"Error in progress callback: {str(e)}")
 
-            if i > N-11:
-                self.autodepth = False
-                self.depth = 9
-
-            # Replace the section around line ~258-285 in the Hand.generate method
-
-            best_finger = 0
-            ninenotes = None
-
-            if i > N-10:
-                # This is where the problem is - we need better handling for the end of the sequence
-                if len(out) > 1:
-                    best_finger = out.pop(1)
-
-                # For the last few notes, we need special handling
-                if i >= N-4 and best_finger == 0:
-                    # Try to determine a sensible fingering for the last few notes
-                    if i > 0 and self.noteseq[i-1].fingering > 0:
-                        prev_finger = self.noteseq[i-1].fingering
-
-                        # Basic fingering rules for the last few notes
-                        if an.isChord:
-                            # Use appropriate fingers for chords based on hand
-                            if self.LR == "right":
-                                # Right-hand chord voicing typically uses 1-3-5 or 1-2-5
-                                chord_position = min(i % 3, 2)  # 0, 1, or 2
-                                chord_fingers = [1, 3, 5]
-                                best_finger = chord_fingers[chord_position]
-                            else:
-                                # Left-hand chord voicing typically uses 5-3-1 or 5-2-1
-                                chord_position = min(i % 3, 2)  # 0, 1, or 2
-                                chord_fingers = [5, 3, 1]
-                                best_finger = chord_fingers[chord_position]
-                        else:
-                            # For melodic passages, use simple up/down patterns
-                            if i > 0:
-                                prev_x = self.noteseq[i-1].x
-                                # Moving right (higher notes for right hand)
-                                if (self.LR == "right" and an.x > prev_x) or (self.LR == "left" and an.x < prev_x):
-                                    best_finger = min(prev_finger + 1, 5)
-                                # Moving left (lower notes for right hand)
-                                else:
-                                    best_finger = max(prev_finger - 1, 1)
-                            else:
-                                best_finger = 3  # Default to middle finger
-                    else:
-                        # If we have no previous context, use middle finger
-                        best_finger = 3
-
-                # Create a dummy ninenotes with the remaining notes plus padding
-                remaining = N - i
-                if remaining < 9:
-                    # Start with actual remaining notes
-                    ninenotes = self.noteseq[i:N]
-                    # Pad with copies of the last note to reach length 9
-                    last_note = self.noteseq[N-1]
-                    padding = [last_note] * (9 - remaining)
-                    ninenotes.extend(padding)
-                else:
-                    ninenotes = self.noteseq[N-9:N]
-            else:
-                # Normal case - we have plenty of notes ahead
-                ninenotes = self.noteseq[i:i+9]
-                out, vel = self.optimize_seq(ninenotes, start_finger)
-                best_finger = out[0]
-                start_finger = out[1]
+            # Always use full window size since we have padding
+            ninenotes = self.noteseq[i:i+9]
+            out, vel = self.optimize_seq(ninenotes, start_finger)
+            best_finger = out[0]
+            start_finger = out[1]
 
             an.fingering = best_finger
             self.set_fingers_positions(out, ninenotes, 0)
             self.fingerseq.append(list(self.cfps))
 
-            if best_finger>0:
+            # Apply fingering to note
+            if best_finger > 0:
                 fng = Fingering(best_finger)
                 if an.isChord:
                     if len(an.chord21.pitches) < 4:
@@ -299,25 +280,70 @@ class Hand:
                     else:
                         an.note21.articulations.append(fng)
 
-            #---------------------------------------------------------------------------- print
+            # Print info if verbose
             if self.verbose:
                 if not best_finger: best_finger = '?'
                 if an.measure: print(f"meas.{an.measure: <3}", end=' ')
                 print(f"finger_{best_finger}  plays  {an.name: >2}{an.octave}", end=' ')
-                if i < N-10:
-                    print(f"  v={round(vel,1)}", end='')
-                    if self.autodepth:
-                        print("\t "+str(out[0:self.depth]) + " d:" + str(self.depth))
-                    else:
-                        print("\t"+("   "*(i%self.depth))+str(out[0:self.depth]))
+                print(f"  v={round(vel,1)}", end='')
+                if self.autodepth:
+                    print("\t "+str(out[0:self.depth]) + " d:" + str(self.depth))
                 else:
-                    print()
+                    print("\t"+("   "*(i%self.depth))+str(out[0:self.depth]))
             else:
                 if i and not i%100 and an.measure:
-                    print('scanned', i, '/', N,
-                          'notes, measure', an.measure+1, ' for the', self.LR ,'hand...')
+                    print('scanned', i, '/', original_length,
+                        'notes, measure', an.measure+1, ' for the', self.LR ,'hand...')
 
-        # Report completion at the end
+        # Final verification pass
+        for i in range(original_length-1, -1, -1):
+            an = self.noteseq[i]
+            if an.measure and start_measure <= an.measure <= start_measure + nmeasures:
+                if an.fingering == 0:  # Missing fingering
+                    # Find the nearest note with valid fingering
+                    nearest_finger = None
+                    # Look backward first
+                    for j in range(i-1, -1, -1):
+                        if j < original_length and self.noteseq[j].fingering > 0:
+                            nearest_finger = self.noteseq[j].fingering
+                            break
+
+                    # If not found backward, look forward
+                    if nearest_finger is None:
+                        for j in range(i+1, original_length):
+                            if self.noteseq[j].fingering > 0:
+                                nearest_finger = self.noteseq[j].fingering
+                                break
+
+                    # Default to middle finger if still not found
+                    if nearest_finger is None:
+                        nearest_finger = 3
+
+                    # Assign fingering
+                    an.fingering = nearest_finger
+
+                    # Apply the fingering to the music21 object
+                    fng = Fingering(an.fingering)
+                    if an.isChord:
+                        if len(an.chord21.pitches) < 4:
+                            if self.lyrics:
+                                nl = len(an.chord21.pitches) - an.chordnr
+                                an.chord21.addLyric(an.fingering, nl)
+                            else:
+                                an.chord21.articulations.append(fng)
+                    else:
+                        if self.lyrics:
+                            an.note21.addLyric(an.fingering)
+                        else:
+                            an.note21.articulations.append(fng)
+
+                    if self.verbose:
+                        print(f"Fixed missing fingering in measure {an.measure}: {an.name}{an.octave} -> finger_{an.fingering} (filled)")
+
+        # Restore the original sequence (remove padding)
+        self.noteseq = original_noteseq
+
+        # Report completion
         if self.callback:
             try:
                 self.callback(
