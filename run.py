@@ -1,23 +1,13 @@
-from flask import Flask
-from config import Config
-import sys
-import os
+import logging
+from app import create_app
 
-# Add the project root to the Python path so imports work correctly
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+# Setup logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+)
 
-# Import the blueprint after setting the path
-from app.routes import app as app_blueprint
-
-app = Flask(__name__,
-           template_folder='app/templates')  # Specify template folder
-app.config.from_object(Config)
-
-# Set a secret key for flash messages
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key')  # Use environment variable
-
-# Register the blueprint
-app.register_blueprint(app_blueprint)
+app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=False)  # Set debug to False for production
+    app.run(debug=True, use_reloader=True, threaded=True)

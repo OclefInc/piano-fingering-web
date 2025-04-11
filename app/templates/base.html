@@ -1,30 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Piano Player</title>
+    <title>Piano Fingering Generator</title>
+    <!-- Your existing head content -->
 </head>
+
 <body>
     <header>
-        <h1>Piano Player Fingering Processing</h1>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="{{ url_for('app.index') }}">Piano Fingering Generator</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav mr-auto">
+                    <li><a href="{{ url_for('app.index') }}">Home</a></li>
+                    <!-- Change this line from 'index' to 'app.index' -->
+                </ul>
+            </div>
+        </nav>
     </header>
     <nav>
-        <ul>
-            <li><a href="{{ url_for('index') }}">Home</a></li>
-            <li><a href="{{ url_for('result') }}">Results</a></li>
-        </ul>
+
     </nav>
     <main>
         {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <ul class="flashes">
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
+        {% if messages %}
+        <ul class="flashes">
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
         {% endwith %}
         {% block content %}{% endblock %}
     </main>
@@ -33,4 +38,5 @@
     </footer>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
+
 </html>
