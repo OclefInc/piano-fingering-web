@@ -188,7 +188,12 @@ def annotate(args):
             rh_noteseq = reader_PIG(args.filename, args.rbeam)
         if not args.right_only:
             lh_noteseq = reader_PIG(args.filename, args.lbeam)
-
+    elif '.mxl' in args.filename:
+        # MXL files are compressed MusicXML files
+        callback(measure=0, total=args.n_measures, status="Reading compressed MusicXML file")
+        sf = converter.parse(args.filename)
+        # set the n_measures to the number of measures in the score
+        args.n_measures = len(sf.parts[args.rbeam].getElementsByClass('Measure'))
     else:
         xmlfn = args.filename
         callback(measure=0, total=args.n_measures, status="Parsing MusicXML file")

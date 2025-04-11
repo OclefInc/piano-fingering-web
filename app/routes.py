@@ -22,7 +22,7 @@ except ImportError:
 
 UPLOAD_FOLDER = os.path.abspath('uploads/')
 OUTPUT_FOLDER = os.path.abspath('outputs/')
-ALLOWED_EXTENSIONS = {'musicxml', 'xml', 'txt', 'mid', 'midi', 'mscz', 'mscx'}
+ALLOWED_EXTENSIONS = {'musicxml', 'xml', 'mxl'}
 
 # Make sure directories exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -146,22 +146,25 @@ def index():
             try:
                 # Save the uploaded file
                 filename = secure_filename(file.filename)
+                # append timestamp to filename to avoid overwriting
+                timestamp = int(time.time())
+                filename = f"{timestamp}_{filename}"
                 filepath = os.path.join(UPLOAD_FOLDER, filename)
                 print(f"Saving file to: {filepath}")
                 file.save(filepath)
 
+                # Get hand size parameters
+                hand_size_params = get_hand_size_params(hand_size)
+
                 # Create output filename
-                output_filename = f"output_{filename}"
+                output_filename = f"{hand_size}_{filename}"
                 if filename.endswith('.mid') or filename.endswith('.midi'):
                     output_filename = output_filename.rsplit('.', 1)[0] + '.txt'
                 else:
-                    output_filename = output_filename.rsplit('.', 1)[0] + '.xml'
+                    output_filename = output_filename.rsplit('.', 1)[0] + '.musicxml'
 
                 # Create output path
                 output_path = os.path.join(OUTPUT_FOLDER, output_filename)
-
-                # Get hand size parameters
-                hand_size_params = get_hand_size_params(hand_size)
 
                 # Generate a task ID
                 task_id = str(uuid.uuid4())
