@@ -60,30 +60,51 @@ def process_file_task(filepath, output_path, hand_size_params, task_id):
     """Process a file in a background thread"""
     try:
         # Update task status
-        BACKGROUND_TASKS[task_id] = {'status': 'processing'}
+        BACKGROUND_TASKS[task_id] = {'status': 'processing', 'progress': 0}
 
         # Create a marker file to indicate processing started
         with open(output_path, 'w') as f:
             f.write("Processing started...\n")
 
-        # Run the processor
+        # Define progress callback
+        def progress_callback(measure=0, total=100, status=""):
+            progress = int((measure / total) * 100) if total > 0 else 0
+            print(f"Progress: {progress}% - {status}")
+            BACKGROUND_TASKS[task_id] = {
+                'status': 'processing',
+                'progress': progress,
+                'measure': measure,
+                'total_measures': total,
+                'message': status
+            }
+
+        # Run the processor with callback
         if run_annotate:
             run_annotate(
                 filename=filepath,
                 outputfile=output_path,
+                callback=progress_callback,
                 **hand_size_params
             )
         else:
-            # Simulate processing if run_annotate is not available (for testing)
-            time.sleep(5)  # Simulate processing time
+            # Simulate processing if run_annotate is not available
+            total_steps = 10
+            for i in range(total_steps + 1):
+                time.sleep(0.5)  # Simulate work
+                progress_callback(
+                    measure=i,
+                    total=total_steps,
+                    status=f"Simulating measure {i} of {total_steps}"
+                )
             with open(output_path, 'w') as f:
                 f.write(f"Simulated processing for {filepath}\n")
                 f.write(f"Hand size parameters: {hand_size_params}\n")
 
-        # Update task status
+        # Update final status
         BACKGROUND_TASKS[task_id] = {
             'status': 'completed',
-            'filename': os.path.basename(output_path)
+            'filename': os.path.basename(output_path),
+            'progress': 100
         }
 
         print(f"File processing completed: {output_path}")

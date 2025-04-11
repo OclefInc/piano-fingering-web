@@ -20,9 +20,10 @@ class Hand:
         self.fingerseq = []
         self.depth     = 9
         self.autodepth = True
-        self.verbose   = True
+        self.verbose   = False
         self.lyrics    = False  # show fingering numbers as lyrics in musescore
         self.size      = size
+        self.callback  = None   # Add callback for progress reporting
 
         self.hf = utils.handSizeFactor(size)
         for i in (1,2,3,4,5):
@@ -31,6 +32,10 @@ class Hand:
         print('(max relaxed distance between thumb and pinkie)')
         self.cfps = list(self.frest) # hold current finger positions
 
+    # Add a method to set a progress callback
+    def set_progress_callback(self, callback_function):
+        """Set a callback function to report progress during processing"""
+        self.callback = callback_function
 
     #####################################################
     def set_fingers_positions(self, fings, notes, i):
@@ -66,7 +71,6 @@ class Hand:
             self.set_fingers_positions(fingering, notes, i) #update all fingers
 
         return vmean / (self.depth-1)
-
 
     #####################################################
     def optimize_seq(self, nseq, istart):
@@ -167,7 +171,6 @@ class Hand:
         # if out[1]==-1: exit() #no combination found
         return out
 
-
     ###########################################################################################
     def generate(self, start_measure=0, nmeasures=1000):
 
@@ -183,12 +186,31 @@ class Hand:
         if self.depth < 3: self.depth = 3
         if self.depth > 9: self.depth = 9
 
+        # Track the current measure for progress reporting
+        current_measure = start_measure
+        last_reported_measure = start_measure - 1
+
         for i in range(N):##############
 
             an = self.noteseq[i]
             if an.measure:
                 if an.measure < start_measure : continue
                 if an.measure > start_measure + nmeasures : break
+
+                # Report progress when measure changes
+                if an.measure != last_reported_measure:
+                    current_measure = an.measure
+                    last_reported_measure = current_measure
+                    # Call progress callback if available
+                    if self.callback:
+                        try:
+                            self.callback(
+                                measure=current_measure - start_measure + 1,
+                                total=nmeasures,
+                                status=f"Processing {self.LR} hand measure {current_measure - start_measure + 1}/{nmeasures}"
+                            )
+                        except Exception as e:
+                            print(f"Error in progress callback: {str(e)}")
 
             if i > N-11:
                 self.autodepth = False
@@ -197,7 +219,7 @@ class Hand:
             best_finger = 0
             ninenotes = None
             if i > N-10:
-                if len(out)>1: 
+                if len(out)>1:
                     best_finger = out.pop(1)
                 ninenotes = self.noteseq[N-9 : N]
             else:
@@ -244,6 +266,13 @@ class Hand:
                     print('scanned', i, '/', N,
                           'notes, measure', an.measure+1, ' for the', self.LR ,'hand...')
 
-
-
-
+        # Report completion at the end
+        if self.callback:
+            try:
+                self.callback(
+                    measure=nmeasures,
+                    total=nmeasures,
+                    status=f"Completed processing {self.LR} hand"
+                )
+            except Exception as e:
+                print(f"Error in progress callback: {str(e)}")

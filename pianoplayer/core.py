@@ -42,7 +42,8 @@ def run_annotate(filename,
                  hand_size_M=False,
                  hand_size_L=False,
                  hand_size_XL=True,
-                 hand_size_XXL=False
+                 hand_size_XXL=False,
+                 callback=None
                  ):
     class Args(object):
         pass
@@ -69,6 +70,7 @@ def run_annotate(filename,
     args.hand_size_L = hand_size_L
     args.hand_size_XL = hand_size_XL
     args.hand_size_XXL = hand_size_XXL
+    args.callback = callback
     annotate(args)
 
 
@@ -154,10 +156,19 @@ def annotate(args):
     if args.hand_size_XL: hand_size = 'XL'
     if args.hand_size_XXL: hand_size = 'XXL'
 
+    # Initialize callback if provided
+    callback = getattr(args, 'callback', None)
+    if not callback:
+        callback = lambda measure=0, total=0, status="": None
+
+    # Call callback with starting status
+    callback(measure=0, total=args.n_measures, status="Initializing processing")
+
     xmlfn = args.filename
     if '.msc' in args.filename:
         try:
             xmlfn = str(args.filename).replace('.mscz', '.xml').replace('.mscx', '.xml')
+            callback(measure=0, total=args.n_measures, status="Converting MuseScore file")
             print('..trying to convert your musescore file to', xmlfn)
             os.system(
                 'musescore -f "' + args.filename + '" -o "' + xmlfn + '"')  # quotes avoid problems w/ spaces in filename
@@ -167,10 +178,12 @@ def annotate(args):
             if not args.right_only:
                 lh_noteseq = reader(sf, beam=args.lbeam)
         except:
+            callback(measure=0, total=args.n_measures, status="Error converting file")
             print('Unable to convert file, try to do it from musescore.')
             sys.exit()
 
     elif '.txt' in args.filename:
+        callback(measure=0, total=args.n_measures, status="Reading PIG file")
         if not args.left_only:
             rh_noteseq = reader_PIG(args.filename, args.rbeam)
         if not args.right_only:
@@ -178,10 +191,14 @@ def annotate(args):
 
     else:
         xmlfn = args.filename
-
+        callback(measure=0, total=args.n_measures, status="Parsing MusicXML file")
         sf = converter.parse(xmlfn)
+        # set the n_measures to the number of measures in the score
+        args.n_measures = len(sf.parts[args.rbeam].getElementsByClass('Measure'))
 
+    # Process right hand if needed
     if not args.left_only:
+        callback(measure=0, total=args.n_measures, status="Preparing right hand fingering")
         rh = Hand("right", hand_size)
         rh.verbose = not(args.quiet)
         if args.depth == 0:
@@ -191,10 +208,17 @@ def annotate(args):
             rh.depth = args.depth
         rh.lyrics = args.below_beam
 
+        # Set the progress callback
+        rh.set_progress_callback(callback)
+
         rh.noteseq = reader(sf, beam=args.rbeam)
         rh.generate(args.start_measure, args.n_measures)
 
+    # Process left hand if needed
     if not args.right_only:
+        callback(measure=args.n_measures//2 if args.n_measures > 1 else 0,
+                total=args.n_measures,
+                status="Preparing left hand fingering")
         lh = Hand("left", hand_size)
         lh.verbose = not(args.quiet)
         if args.depth == 0:
@@ -204,32 +228,18 @@ def annotate(args):
             lh.depth = args.depth
         lh.lyrics = args.below_beam
 
+        # Set the progress callback
+        lh.set_progress_callback(callback)
+
         lh.noteseq = reader(sf, beam=args.lbeam)
         lh.generate(args.start_measure, args.n_measures)
 
+    # Final processing
+    callback(measure=args.n_measures, total=args.n_measures, status="Writing output file")
     sf.write('xml', fp=args.outputfile)
 
-    if args.with_vedo:
-        from pianoplayer.vkeyboard import VirtualKeyboard
-
-        if args.start_measure != 1:
-            print('Sorry, start_measure must be set to 1 when -v option is used. Exit.')
-            exit()
-
-        vk = VirtualKeyboard(songname=xmlfn)
-
-        if not args.left_only:
-            vk.build_RH(rh)
-        if not args.right_only:
-            vk.build_LH(lh)
-
-        if args.sound_off:
-            vk.playsounds = False
-
-        vk.speedfactor = args.vedo_speed
-        vk.play()
-        vk.vp.show(zoom=2, interactive=1)
-
+    # Call final callback
+    callback(measure=args.n_measures, total=args.n_measures, status="Processing complete")
 
 if __name__ == '__main__':
     run_annotate('../scores/test_chord.xml', outputfile="test_chord_annotate.xml", right_only=True, musescore=True, n_measures=800, depth=0)

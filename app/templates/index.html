@@ -1,34 +1,34 @@
-<!DOCTYPE html>
-<html>
+{% extends 'base.html' %}
 
-<head>
-    <title>Piano Fingering</title>
-</head>
-
-<body>
+{% block content %}
+<div class="container">
     <h1>Piano Fingering</h1>
-    <form method="POST" enctype="multipart/form-data">
-        <div>
-            <label for="file">Upload File:</label>
-            <input type="file" id="file" name="file" required>
-        </div>
-        <div>
-            <label for="hand_size">Hand Size:</label>
-            <select id="hand_size" name="hand_size" required>
-                <option value="XXS">XXS</option>
-                <option value="XS">XS</option>
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
-                <option value="XXL">XXL</option>
-            </select>
-        </div>
-        <div>
-            <input type="submit" value="Submit">
-        </div>
-    </form>
-
+    <div class="result-container">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Upload File:</label>
+                <input type="file" id="file" name="file" class="form-control-file" required>
+                <small class="form-text text-muted">Supported formats: MusicXML, MIDI, MuseScore</small>
+            </div>
+            <div class="form-group">
+                <label for="hand_size">Hand Size:</label>
+                <select id="hand_size" name="hand_size" class="form-control" required>
+                    <option value="XXS">XXS - Child</option>
+                    <option value="XS">XS - Small</option>
+                    <option value="S">S - Smaller than average</option>
+                    <option value="M" selected>M - Average</option>
+                    <option value="L">L - Larger than average</option>
+                    <option value="XL">XL - Large</option>
+                    <option value="XXL">XXL - Very large</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary btn-lg submit-button">
+                    <i class="fas fa-music"></i> Generate Fingering
+                </button>
+            </div>
+        </form>
+    </div>
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <ul class="flashes">
@@ -38,6 +38,6 @@
     </ul>
     {% endif %}
     {% endwith %}
-</body>
-
-</html>
+</div>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+{% endblock %}
