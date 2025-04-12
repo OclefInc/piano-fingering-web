@@ -6,6 +6,9 @@ import traceback
 import threading
 import time
 import uuid
+import json
+import random
+from datetime import datetime
 
 # Create the blueprint with the correct name
 app_bp = Blueprint('app', __name__, template_folder='templates')
@@ -57,26 +60,41 @@ def get_hand_size_params(hand_size):
     return params
 
 def process_file_task(filepath, output_path, hand_size_params, task_id):
-    """Process a file in a background thread"""
+    """Process a file in a background thread with file-based progress tracking"""
     try:
-        # Update task status
-        BACKGROUND_TASKS[task_id] = {'status': 'processing', 'progress': 0}
+        # Determine status file path
+        status_dir = os.path.dirname(output_path)
+        status_file = os.path.join(status_dir, f"status_{task_id}.json")
 
-        # Create a marker file to indicate processing started
-        with open(output_path, 'w') as f:
-            f.write("Processing started...\n")
+        # Initialize status in file
+        with open(status_file, 'w') as f:
+            json.dump({
+                'status': 'processing',
+                'progress': 0,
+                'measure': 0,
+                'total_measures': 100,
+                'message': 'Starting processing',
+                'last_update': datetime.now().isoformat()
+            }, f)
 
-        # Define progress callback
+        # Create progress callback function
         def progress_callback(measure=0, total=100, status=""):
             progress = int((measure / total) * 100) if total > 0 else 0
-            print(f"Progress: {progress}% - {status}")
-            BACKGROUND_TASKS[task_id] = {
-                'status': 'processing',
-                'progress': progress,
-                'measure': measure,
-                'total_measures': total,
-                'message': status
-            }
+            # print(f"Progress: {progress}% - {status}")
+
+            # Update status file
+            try:
+                with open(status_file, 'w') as f:
+                    json.dump({
+                        'status': 'processing',
+                        'progress': progress,
+                        'measure': measure,
+                        'total_measures': total,
+                        'message': status,
+                        'last_update': datetime.now().isoformat()
+                    }, f)
+            except Exception as e:
+                print(f"Error updating status file: {str(e)}")
 
         # Run the processor with callback
         if run_annotate:
@@ -86,26 +104,15 @@ def process_file_task(filepath, output_path, hand_size_params, task_id):
                 callback=progress_callback,
                 **hand_size_params
             )
-        else:
-            # Simulate processing if run_annotate is not available
-            total_steps = 10
-            for i in range(total_steps + 1):
-                time.sleep(0.5)  # Simulate work
-                progress_callback(
-                    measure=i,
-                    total=total_steps,
-                    status=f"Simulating measure {i} of {total_steps}"
-                )
-            with open(output_path, 'w') as f:
-                f.write(f"Simulated processing for {filepath}\n")
-                f.write(f"Hand size parameters: {hand_size_params}\n")
 
         # Update final status
-        BACKGROUND_TASKS[task_id] = {
-            'status': 'completed',
-            'filename': os.path.basename(output_path),
-            'progress': 100
-        }
+        with open(status_file, 'w') as f:
+            json.dump({
+                'status': 'completed',
+                'progress': 100,
+                'filename': os.path.basename(output_path),
+                'last_update': datetime.now().isoformat()
+            }, f)
 
         print(f"File processing completed: {output_path}")
     except Exception as e:
@@ -113,23 +120,36 @@ def process_file_task(filepath, output_path, hand_size_params, task_id):
         print(f"Error processing file: {str(e)}")
         traceback.print_exc()
 
-        # Create an error file
+        # Update error status
         try:
-            with open(output_path, 'w') as f:
-                f.write(f"ERROR: Could not process {filepath}\n")
-                f.write(f"Error details: {str(e)}\n")
+            with open(status_file, 'w') as f:
+                json.dump({
+                    'status': 'failed',
+                    'error': str(e),
+                    'filename': os.path.basename(output_path),
+                    'last_update': datetime.now().isoformat()
+                }, f)
         except Exception as write_error:
-            print(f"Error creating error file: {str(write_error)}")
+            print(f"Error updating status file: {str(write_error)}")
 
-        # Update task status
-        BACKGROUND_TASKS[task_id] = {
-            'status': 'failed',
-            'error': str(e),
-            'filename': os.path.basename(output_path)
-        }
+def cleanup_status_files(max_age_hours=24):
+    """Clean up old status files"""
+    try:
+        current_time = time.time()
+        for filename in os.listdir(OUTPUT_FOLDER):
+            if filename.startswith('status_') and filename.endswith('.json'):
+                filepath = os.path.join(OUTPUT_FOLDER, filename)
+                file_age = current_time - os.path.getmtime(filepath)
+                # If file is older than max_age_hours
+                if file_age > (max_age_hours * 3600):
+                    os.remove(filepath)
+    except Exception as e:
+        print(f"Error cleaning up status files: {str(e)}")
 
 @app_bp.route('/', methods=['GET', 'POST'])
 def index():
+    if random.random() < 0.1:  # ~10% of requests
+        cleanup_status_files()
     if request.method == 'POST':
         if 'file' not in request.files:
             flash('No file part')
@@ -209,12 +229,36 @@ def processing_status():
 
 @app_bp.route('/check-status/<task_id>')
 def check_status(task_id):
-    """API endpoint for checking task status via AJAX"""
+    """API endpoint for checking task status via file"""
     filename = request.args.get('filename')
+    hand_size = request.args.get('hand_size', '')
 
-    # First check our task dictionary
-    if task_id in BACKGROUND_TASKS:
-        return jsonify(BACKGROUND_TASKS[task_id])
+    # Try to read from status file
+    status_file = os.path.join(OUTPUT_FOLDER, f"status_{task_id}.json")
+
+    if os.path.exists(status_file):
+        try:
+            # Check if file is being written to (avoid read errors)
+            last_mod_time = os.path.getmtime(status_file)
+            current_time = time.time()
+
+            # If file was modified in the last second, wait briefly
+            if current_time - last_mod_time < 1:
+                time.sleep(0.5)
+
+            with open(status_file, 'r') as f:
+                status_data = json.load(f)
+
+            # Add hand_size to response if it exists
+            if hand_size:
+                status_data['hand_size'] = hand_size
+
+            return jsonify(status_data)
+        except json.JSONDecodeError:
+            # Handle potential corruption during writing
+            return jsonify({'status': 'processing', 'progress': 0})
+        except Exception as e:
+            print(f"Error reading status file: {str(e)}")
 
     # Fallback to file-based checking
     if filename:
@@ -222,11 +266,12 @@ def check_status(task_id):
         if os.path.isfile(output_path):
             return jsonify({
                 'status': 'completed',
-                'filename': filename
+                'filename': filename,
+                'hand_size': hand_size
             })
 
     # If we don't have any status, assume it's still processing
-    return jsonify({'status': 'processing'})
+    return jsonify({'status': 'processing', 'hand_size': hand_size})
 
 @app_bp.route('/result')
 def result():

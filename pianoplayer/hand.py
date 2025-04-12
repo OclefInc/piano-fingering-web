@@ -281,19 +281,21 @@ class Hand:
                         an.note21.articulations.append(fng)
 
             # Print info if verbose
-            if self.verbose:
-                if not best_finger: best_finger = '?'
-                if an.measure: print(f"meas.{an.measure: <3}", end=' ')
-                print(f"finger_{best_finger}  plays  {an.name: >2}{an.octave}", end=' ')
-                print(f"  v={round(vel,1)}", end='')
-                if self.autodepth:
-                    print("\t "+str(out[0:self.depth]) + " d:" + str(self.depth))
-                else:
-                    print("\t"+("   "*(i%self.depth))+str(out[0:self.depth]))
-            else:
-                if i and not i%100 and an.measure:
-                    print('scanned', i, '/', original_length,
-                        'notes, measure', an.measure+1, ' for the', self.LR ,'hand...')
+            # if self.verbose:
+            #     if not best_finger:
+            #         best_finger = '?'
+            #     if an.measure:
+            #         print(f"meas.{an.measure: <3}", end=' ')
+            #     print(f"finger_{best_finger}  plays  {an.name: >2}{an.octave}", end=' ')
+            #     print(f"  v={round(vel,1)}", end='')
+            #     if self.autodepth:
+            #         print("\t "+str(out[0:self.depth]) + " d:" + str(self.depth))
+            #     else:
+            #         print("\t"+("   "*(i%self.depth))+str(out[0:self.depth]))
+            # else:
+            #     if i and not i%100 and an.measure:
+            #         print('scanned', i, '/', original_length,
+            #             'notes, measure', an.measure+1, ' for the', self.LR ,'hand...')
 
         # Final verification pass
         for i in range(original_length-1, -1, -1):
@@ -337,8 +339,8 @@ class Hand:
                         else:
                             an.note21.articulations.append(fng)
 
-                    if self.verbose:
-                        print(f"Fixed missing fingering in measure {an.measure}: {an.name}{an.octave} -> finger_{an.fingering} (filled)")
+                    # if self.verbose:
+                    #     print(f"Fixed missing fingering in measure {an.measure}: {an.name}{an.octave} -> finger_{an.fingering} (filled)")
 
         # Restore the original sequence (remove padding)
         self.noteseq = original_noteseq
