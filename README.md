@@ -5,30 +5,42 @@ This project is a Flask web application that allows users to upload musical file
 # Acknowledgments
 
 pianoplayer is a hard fork of Marco Musy [pianoplayer](https://github.com/marcomusy/pianoplayer)
+We use [opensheetmusicdisplay](https://opensheetmusicdisplay.org) for rendering musicxml
 
 
 ## Project Structure
 
 ```
-piano-player-web
-├── app
-│   ├── __init__.py        # Initializes the Flask application
-│   ├── routes.py          # Defines the application routes
-│   ├── forms.py           # Contains form classes for user input
-│   ├── models.py          # Defines data models for database interactions
+piano-fingering
+├── pianoplayer                     # Core library for piano fingering
+│   ├── __init__.py                 # Package initialization
+│   ├── core.py                     # Main functions for fingering annotation
+│   ├── hand.py                     # Hand model and fingering algorithms
+│   ├── scorereader.py              # MusicXML and PIG file parsing
+│   └── utils.py                    # Utility functions
+│
+├── app                             # Flask web application
+│   ├── __init__.py                 # Flask app initialization
+│   ├── routes.py                   # Web routes and API endpoints
 │   ├── static
-│   │   ├── css
-│   │   │   └── style.css   # CSS styles for the web application
-│   │   └── js
-│   │       └── script.js    # JavaScript code for client-side functionality
-│   └── templates
-│       ├── base.html       # Base HTML template
-│       ├── index.html      # Main page for file upload and hand size selection
-│       └── result.html     # Displays results after processing
-├── config.py               # Configuration settings for the Flask application
-├── requirements.txt         # Lists project dependencies
-├── run.py                  # Entry point to run the Flask application
-└── README.md               # Documentation for the project
+│   │   ├── css                     # Stylesheets
+│   │   ├── js                      # JavaScript files
+│   │   │   └── osmd                # OpenSheetMusicDisplay library
+│   │   └── uploads                 # Temporary storage for uploads
+│   └── templates                   # HTML templates
+│       ├── base.html               # Base template with common elements
+│       ├── index.html              # Upload form page
+│       └── result.html             # Results display page
+│
+├── tests                           # Test suite
+│   ├── __init__.py
+│   └── test_fingering.py           # Tests for fingering algorithm
+│
+├── requirements.txt                # Project dependencies
+├── Procfile                        # Heroku deployment configuration
+├── config.py                       # Application configuration
+├── run.py                          # Application entry point
+└── README.md                       # Project documentation
 ```
 
 ## Setup Instructions
