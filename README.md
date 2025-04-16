@@ -2,6 +2,11 @@
 
 This project is a Flask web application that allows users to upload musical files and select a hand size for fingering processing. The application processes the uploaded files and provides results based on the selected hand size.
 
+# Acknowledgments
+
+pianoplayer is a hard fork of Marco Musy [pianoplayer](https://github.com/marcomusy/pianoplayer)
+
+
 ## Project Structure
 
 ```
@@ -30,8 +35,8 @@ piano-player-web
 
 1. **Clone the repository:**
    ```
-   git clone <repository-url>
-   cd piano-player-web
+   git clone https://github.com/oclef/piano-fingering.git
+   cd piano-fingering
    ```
 
 2. **Create a virtual environment:**
