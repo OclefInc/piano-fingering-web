@@ -35,8 +35,8 @@ piano-player-web
 
 1. **Clone the repository:**
    ```
-   git clone https://github.com/oclef/piano-fingering.git
-   cd piano-fingering
+   git clone https://github.com/OclefInc/piano-fingering-web.git
+   cd piano-fingering-web
    ```
 
 2. **Create a virtual environment:**
