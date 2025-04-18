@@ -7,6 +7,11 @@ This project is a Flask web application that allows users to upload musical file
 pianoplayer is a hard fork of Marco Musy [pianoplayer](https://github.com/marcomusy/pianoplayer)
 We use [opensheetmusicdisplay](https://opensheetmusicdisplay.org) for rendering musicxml
 
+# Relevent Academic Research
+
+Al Kasimi et al. [A Simple Algorithm for Automatic Generation of Polyphonic Piano Fingering](https://ismir2007.ismir.net/proceedings/ISMIR2007_p355_kasimi.pdf)
+Parncutt et al. [An Ergonomic Model of Keyboard Fingering for Melodic Fragments](https://static.uni-graz.at/fileadmin/_Persoenliche_Webseite/parncutt_richard/Pdfs/PaSlClRaDe97_FingeringModel.pdf)
+Sorensen et al. [A Tabu Search Algorithm to Generate Piano Fingerings for Polyphonic Sheet Music](https://www.dorienherremans.com/sites/default/files/paper_mcm_preprint.pdf)
 
 ## Project Structure
 
