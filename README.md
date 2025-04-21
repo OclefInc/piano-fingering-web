@@ -82,7 +82,7 @@ piano-fingering
 
 ## Demo
 
-https://piano-finger.8va.co(https://piano-finger.8va.co)
+[demo](https://piano-finger.8va.co)
 
 ## Contributing
 
