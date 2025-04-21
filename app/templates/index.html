@@ -29,6 +29,7 @@
             </div>
         </form>
     </div>
+    <video src="{{ url_for('static', filename='videos/demo.mp4') }}" controls width="100%"></video>
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <ul class="flashes">
